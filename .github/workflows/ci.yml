@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -7,7 +7,22 @@ on:
     branches: [dev, main]
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, sqlite3
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
   test:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +54,7 @@ jobs:
         run: php artisan test
 
   lint:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,3 +69,40 @@ jobs:
 
       - name: Run Laravel Pint (cek gaya kode)
         run: ./vendor/bin/pint --test
+
+  staging:
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Simulasi deploy ke staging
+        run: echo "Deploy ke staging berhasil (simulasi, belum ke server sungguhan)"
+
+  production:
+    needs: staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: "1. Kunci pintu"
+        run: echo "php artisan down --retry=60"
+
+      - name: "2. Ambil kode terbaru"
+        run: echo "git pull origin main"
+
+      - name: "3. Pasang dependensi (tanpa paket dev)"
+        run: echo "composer install --no-dev --optimize-autoloader"
+
+      - name: "4. Migrasi basis data"
+        run: echo "php artisan migrate --force"
+
+      - name: "5. Bangun ulang cache"
+        run: |
+          echo "php artisan config:cache"
+          echo "php artisan route:cache"
+          echo "php artisan view:cache"
+
+      - name: "6. Muat ulang pekerja antrean"
+        run: echo "php artisan queue:restart"
+
+      - name: "7. Buka pintu kembali"
+        run: echo "php artisan up"
