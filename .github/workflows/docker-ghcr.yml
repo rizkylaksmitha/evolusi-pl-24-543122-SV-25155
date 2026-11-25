@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - dev
-      - feature/docker-multistage-ghcr
 
 permissions:
   contents: read
@@ -13,7 +11,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/kepl2026/evolusi-pl-24-543122-sv-25155
+  IMAGE_NAME: ghcr.io/rizkylaksmitha/evolusi-pl-24-543122-sv-25155
 
 jobs:
   build-and-push:
